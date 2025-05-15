@@ -1,18 +1,19 @@
 class SL_Node:
-    def __init__(self,value=None):
+    def __init__(self, value=None):
         self.value = value
         self.next = None
 
     def __str__(self):
         return f"[{self.value}]"
 
+
 class SL_List:
     def __init__(self):
         self.head = None
-    
+
     def is_empty(self):
         return self.head == None
-    
+
     def add_front(self, value):
         new_node = SL_Node(value)
         new_node.next = self.head
@@ -34,7 +35,7 @@ class SL_List:
         item = self.head
         self.head = self.head.next
         return item
-    
+
     def delete_rear(self):
         if self.is_empty():
             return print(f"You can't delete from an empty list")
@@ -46,7 +47,7 @@ class SL_List:
         item = current.next
         current.next = None
         return item
-    
+
     def find_by_value(self, value):
         current = self.head
         while current != None:
@@ -54,10 +55,10 @@ class SL_List:
                 return current
             current = current.next
         return None
-    
-    def delete_by_value(self,value):
+
+    def delete_by_value(self, value):
         current = self.head
-        tmp = None 
+        tmp = None
         if current.value == value:
             return self.delete_front()
         if current.next == None:
@@ -69,7 +70,7 @@ class SL_List:
                 return tmp
             current = current.next
         return print("Node not found in the list")
-    
+
     def find_by_address(self, address):
         current = self.head
         for i in range(address):
@@ -77,7 +78,7 @@ class SL_List:
                 return None
             current = current.next
         return current
-    
+
     # def insert_by_address(self, address, value):
     #     if address < 1:
     #         return print(f"You can't insert at address {address}")
@@ -104,7 +105,7 @@ class SL_List:
     #             return print(f"There is no address {address}")
     #         prev = current
     #         current = current.next
-    #     prev.next = current.next                
+    #     prev.next = current.next
 
     def insert_by_node(self, node, value):
         if node is None:
