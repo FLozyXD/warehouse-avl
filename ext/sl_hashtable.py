@@ -8,7 +8,7 @@ import sl
 class SL_HashTable:
     def __init__(self, size):
         self.size = size
-        self.table = [sl.SL_List() for _ in range(size)]  # Исправлено
+        self.table = [sl.SL_List() for _ in range(size)]
 
     def h(self, key):
         return sum(ord(c) for c in str(key)) % self.size
@@ -26,7 +26,7 @@ class SL_HashTable:
         while current != None:
             if current.value[0] == key:
                 return current
-            current = current.next  # Исправлено
+            current = current.next
         return None
 
     def delkey(self, key):
