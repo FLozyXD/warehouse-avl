@@ -6,29 +6,29 @@ from sl_hashtable import SL_HashTable
 
 
 class Property:
-    def __init__(self, value: int | str):
+    def __init__(self, value):
         self.value = value
         self.links: List[SL_Node] = list()
 
     def __repr__(self) -> str:
         return f"Property({self.value!r}, {self.links})"
 
-    def __lt__(self, other: int | str) -> bool:
+    def __lt__(self, other) -> bool:
         return self.value < other
 
-    def __le__(self, other: int | str) -> bool:
+    def __le__(self, other) -> bool:
         return self.value <= other
 
-    def __eq__(self, other: int | str) -> bool:
+    def __eq__(self, other) -> bool:
         return self.value == other
 
-    def __ne__(self, other: int | str) -> bool:
+    def __ne__(self, other) -> bool:
         return self.value != other
 
-    def __ge__(self, other: int | str) -> bool:
+    def __ge__(self, other) -> bool:
         return self.value >= other
 
-    def __gt__(self, other: int | str) -> bool:
+    def __gt__(self, other) -> bool:
         return self.value > other
 
 
@@ -36,7 +36,7 @@ class PropertyBank:
     def __init__(self):
         self.bank: List[Property] = list()
 
-    def b_search(self, value: int | str, force: bool = False) -> int:
+    def b_search(self, value, force: bool = False) -> int:
         # Бинарный поиск. С флагом `force` всегда возвращает индекс
         west, east = 0, len(self.bank) - 1
         while west <= east:
@@ -49,12 +49,12 @@ class PropertyBank:
                 return center
         return west if force else -1
 
-    def get(self, value: int | str) -> List[SL_Node] | None:
+    def get(self, value) -> List[SL_Node] | None:
         if (index := self.b_search(value)) != -1:
             return self.bank[index].links
         return None
 
-    def put(self, value: int | str, link: SL_Node) -> Property:
+    def put(self, value, link: SL_Node) -> Property:
         # Возвращаем Property, чтобы можно было установить двойную связь
         index = self.b_search(value, force=True)
 
@@ -64,13 +64,31 @@ class PropertyBank:
 
         return self.bank[index]
 
-    def delete(self, value: int | str):
+    def delete(self, value):
         if (index := self.b_search(value)) != -1:
             self.bank.pop(index)
         raise ValueError(f"property {value!r} not in bank")
 
 
+class Item:
+    def __init__(
+        self,
+        name: Property,
+        category: Property,
+        qty: Property,
+        price: Property,
+        min_qty: Property,
+    ):
+        self.name = name
+        self.category = category
+        self.qty = qty
+        self.price = price
+        self.min_qty = min_qty
+
+
 class InventorySystem:
+    FIELDS = "Id", "Name", "Category", "Quantity", "Price", "Min_Allowed_Quantity"
+
     def __init__(self, size=100):
         self.table = SL_HashTable(size)
 
@@ -90,15 +108,7 @@ class InventorySystem:
 
     def save_to_csv(self, filename):
         with open(filename, "w", newline="", encoding="utf-8-sig") as f:
-            fieldnames = [
-                "Id",
-                "Name",
-                "Category",
-                "Quantity",
-                "Price",
-                "Min_Allowed_Quantity",
-            ]
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=self.FIELDS)
             writer.writeheader()
             for i in range(self.table.size):
                 current = self.table.table[i].head
