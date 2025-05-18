@@ -58,14 +58,11 @@ class PropertyBank:
         # Возвращаем Property, чтобы можно было установить двойную связь
         index = self.b_search(value, force=True)
 
-        if self.bank[index] == value:
-            self.bank[index].append(link)
-            return self.bank[index]
-        else:
-            _property = Property(value)
-            _property.links.append(link)
-            self.bank.insert(index, _property)
-            return _property
+        if self.bank[index] != value:
+            self.bank.insert(index, Property(value))
+        self.bank[index].links.append(link)
+
+        return self.bank[index]
 
     def delete(self, value: int | str):
         if (index := self.b_search(value)) != -1:
