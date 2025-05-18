@@ -1,5 +1,6 @@
 from inventory_system import InventorySystem
 
+
 def main():
     system = InventorySystem(100)
     system.load_from_csv("assortment.csv")
@@ -67,6 +68,7 @@ def main():
 
         else:
             print("Неверный выбор")
+
 
 if __name__ == "__main__":
     main()

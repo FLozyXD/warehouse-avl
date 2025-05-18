@@ -37,7 +37,7 @@ class PropertyBank:
         self.bank: List[Property] = list()
 
     def b_search(self, value: int | str, force: bool = False) -> int:
-        # Бинарный поиск. С флагом `force` всегда возвращает индекс 
+        # Бинарный поиск. С флагом `force` всегда возвращает индекс
         west, east = 0, len(self.bank) - 1
         while west <= east:
             center = (west + east) >> 1
@@ -78,7 +78,7 @@ class InventorySystem:
         self.table = SL_HashTable(size)
 
     def load_from_csv(self, filename):
-        with open(filename, newline='', encoding="utf-8-sig") as f:
+        with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 key = int(row["Id"])
@@ -93,21 +93,30 @@ class InventorySystem:
 
     def save_to_csv(self, filename):
         with open(filename, "w", newline="", encoding="utf-8-sig") as f:
-            fieldnames = ["Id", "Name", "Category", "Quantity", "Price", "Min_Allowed_Quantity"]
+            fieldnames = [
+                "Id",
+                "Name",
+                "Category",
+                "Quantity",
+                "Price",
+                "Min_Allowed_Quantity",
+            ]
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             for i in range(self.table.size):
                 current = self.table.table[i].head
                 while current:
                     key, data = current.value
-                    writer.writerow({
-                        "Id": key,
-                        "Name": data["Name"],
-                        "Category": data["Category"],
-                        "Quantity": data["Quantity"],
-                        "Price": data["Price"],
-                        "Min_Allowed_Quantity": data["Min_Allowed_Quantity"],
-                    })
+                    writer.writerow(
+                        {
+                            "Id": key,
+                            "Name": data["Name"],
+                            "Category": data["Category"],
+                            "Quantity": data["Quantity"],
+                            "Price": data["Price"],
+                            "Min_Allowed_Quantity": data["Min_Allowed_Quantity"],
+                        }
+                    )
                     current = current.next
 
     def add_product(self, id, name, category, quantity, price, min_quantity):
@@ -168,5 +177,7 @@ class InventorySystem:
             while current:
                 product = current.value[1]
                 if product["Quantity"] < product["Min_Allowed_Quantity"]:
-                    print(f'{product["Name"]} (Остаток: {product["Quantity"]}, Минимум: {product["Min_Allowed_Quantity"]})')
+                    print(
+                        f'{product["Name"]} (Остаток: {product["Quantity"]}, Минимум: {product["Min_Allowed_Quantity"]})'
+                    )
                 current = current.next
