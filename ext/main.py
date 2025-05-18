@@ -22,23 +22,23 @@ def main():
         choice = input("Выберите пункт: ")
 
         if choice == "1":
-            id = int(input("ID: "))
+            _id = int(input("ID: "))
             name = input("Название: ")
             category = input("Категория: ")
             quantity = int(input("Количество: "))
             price = int(input("Цена: "))
             min_qty = int(input("Мин. допустимое количество: "))
-            system.add_product(id, name, category, quantity, price, min_qty)
+            system.add_product(_id, name, category, quantity, price, min_qty)
 
         elif choice == "2":
-            id = int(input("ID для удаления: "))
-            result = system.delete_product(id)
+            _id = int(input("ID для удаления: "))
+            result = system.delete_product(_id)
             print("Удалено." if result is not None else "Товар не найден.")
 
         elif choice == "3":
-            id = int(input("ID товара: "))
+            _id = int(input("ID товара: "))
             qty = int(input("Новое количество: "))
-            if system.update_quantity(id, qty):
+            if system.update_quantity(_id, qty):
                 print("Количество обновлено.")
             else:
                 print("Товар не найден.")
