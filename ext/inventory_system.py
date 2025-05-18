@@ -126,7 +126,7 @@ class InventorySystem:
                     )
                     current = current.next
 
-    def add_product(self, id, name, category, quantity, price, min_quantity):
+    def add_product(self, _id, name, category, quantity, price, min_quantity):
         data = {
             "Name": name,
             "Category": category,
@@ -134,13 +134,13 @@ class InventorySystem:
             "Price": price,
             "Min_Allowed_Quantity": min_quantity,
         }
-        self.table.put(id, data)
+        self.table.put(_id, data)
 
-    def delete_product(self, id):
-        return self.table.delkey(id)
+    def delete_product(self, _id):
+        return self.table.delkey(_id)
 
-    def update_quantity(self, id, new_quantity):
-        node = self.table.get(id)
+    def update_quantity(self, _id, new_quantity):
+        node = self.table.get(_id)
         if node:
             node.value[1]["Quantity"] = new_quantity
             return True
