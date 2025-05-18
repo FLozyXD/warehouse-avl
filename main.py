@@ -1,4 +1,4 @@
-from inventory_system import Product, InventorySystem
+from ext.inventory import Product, InventorySystem
 
 
 def _input(string: str, prop: str | None = None):

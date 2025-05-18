@@ -42,15 +42,14 @@ class Product:
         "min_quantity": {
             "type": int,
             "width": 4,
-        }
-    } 
+        },
+    }
     __slots__ = tuple(PROTO.keys())
 
     def __repr__(self) -> str:
         return "Product(%s)" % ", ".join(
             str(getattr(self, attr).value) for attr in self.__slots__
         )
-
 
 
 class PropertyBank:
@@ -133,8 +132,8 @@ class Product:
         "min_quantity": {
             "type": int,
             "width": 4,
-        }
-    } 
+        },
+    }
     __slots__ = tuple(PROTO.keys())
 
     def __repr__(self) -> str:
@@ -156,7 +155,9 @@ class InventorySystem:
         with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                props = [meta["type"](row[attr]) for attr, meta in Product.PROTO.items()]
+                props = [
+                    meta["type"](row[attr]) for attr, meta in Product.PROTO.items()
+                ]
                 self.add_product(*props)
 
     def save_to_csv(self, filename):
@@ -180,7 +181,6 @@ class InventorySystem:
         product.price = self.price_bank.put(price, product)
         product.min_quantity = self.min_quantity_bank.put(min_quantity, product)
 
-
     def delete_product(self, _id) -> bool:
         product = self.id_bank.get(_id)
         if product is None:
@@ -194,7 +194,7 @@ class InventorySystem:
         self.price_bank.delete(product.price, product)
         self.min_quantity_bank.delete(product.min_quantity, product)
 
-        return True        
+        return True
 
     def update_quantity(self, _id, new_quantity):
         if new_quantity < 0:
@@ -239,14 +239,15 @@ class InventorySystem:
 
     @staticmethod
     def _generate_report_header() -> str:
-        header = " | ".join(attr.ljust(meta["width"]) for attr, meta in Product.PROTO.items())
+        header = " | ".join(
+            attr.ljust(meta["width"]) for attr, meta in Product.PROTO.items()
+        )
         yield header
         yield "-" * len(header)
 
-
     def generate_stock_report(self, filter_by_stock: bool = False) -> str:
         yield from self._generate_report_header()
-        
+
         if not filter_by_stock:
             for prop in self.id_bank.bank:
                 yield self._format_product(prop.links[0])
