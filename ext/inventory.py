@@ -13,6 +13,18 @@ class Property:
     def __lt__(self, other) -> bool:
         return self.value < other
 
+    def __le__(self, other) -> bool:
+        return self.value <= other
+
+    def __eq__(self, other) -> bool:
+        return self.value == other
+
+    def __ne__(self, other) -> bool:
+        return self.value != other
+
+    def __ge__(self, other) -> bool:
+        return self.value >= other
+
     def __gt__(self, other) -> bool:
         return self.value > other
 
@@ -107,41 +119,6 @@ class PropertyBank:
             self.bank.pop(index)
 
 
-class Product:
-    PROTO = {
-        "id": {
-            "type": int,
-            "width": 4,
-        },
-        "name": {
-            "type": str,
-            "width": 32,
-        },
-        "category": {
-            "type": str,
-            "width": 32,
-        },
-        "quantity": {
-            "type": int,
-            "width": 4,
-        },
-        "price": {
-            "type": int,
-            "width": 4,
-        },
-        "min_quantity": {
-            "type": int,
-            "width": 4,
-        },
-    }
-    __slots__ = tuple(PROTO.keys())
-
-    def __repr__(self) -> str:
-        return "Product(%s)" % ", ".join(
-            str(getattr(self, attr).value) for attr in self.__slots__
-        )
-
-
 class InventorySystem:
     def __init__(self):
         self.id_bank = PropertyBank()
@@ -183,7 +160,7 @@ class InventorySystem:
 
     def delete_product(self, _id) -> bool:
         product = self.id_bank.get(_id)
-        if product is None:
+        if len(product) == 0:
             return False
         product = product[0]
 
@@ -201,7 +178,7 @@ class InventorySystem:
             raise ValueError("quantity can't be negative")
 
         product = self.id_bank.get(_id)
-        if product is None:
+        if len(product) == 0:
             return False
         product = product[0]
 
@@ -211,18 +188,18 @@ class InventorySystem:
 
     def find_by_name(self, name):
         yield from self._generate_report_header()
-        for name in self.name_bank.get(name):
-            yield self._format_product(name)
+        for _name in self.name_bank.get(name):
+            yield self._format_product(_name)
 
     def find_by_category(self, category):
         yield from self._generate_report_header()
-        for category in self.category_bank.get(category):
-            yield self._format_product(category)
+        for _category in self.category_bank.get(category):
+            yield self._format_product(_category)
 
     def find_by_price_range(self, min_price, max_price):
         yield from self._generate_report_header()
-        for price in self.price_bank.get_by_slice(min_price, max_price):
-            yield self._format_product(price)
+        for _price in self.price_bank.get_by_slice(min_price, max_price):
+            yield self._format_product(_price)
 
     @staticmethod
     def cut_value(value, width: int) -> str:
@@ -256,6 +233,6 @@ class InventorySystem:
         for prop in self.quantity_bank.bank:
             quantity = prop.value
             for link in prop.links:
-                if quantity >= link.min_quantity.value:
+                if quantity >= link.min_quantity:
                     continue
                 yield self._format_product(link)

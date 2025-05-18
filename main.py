@@ -8,12 +8,20 @@ def _input(string: str, prop: str | None = None):
     return Product.PROTO[prop]["type"](value)
 
 
+def print_table(strings):
+    strings = list(strings)
+    if len(strings) <= 2:
+        return
+    print("\n".join(strings))
+
+
 def main():
     system = InventorySystem()
     system.load_from_csv("assortment.csv")
 
     while True:
-        print("\nМеню:")
+        print()
+        print("Меню:")
         print("0. Общий отчет")
         print("1. Добавить товар")
         print("2. Удалить товар")
@@ -25,17 +33,15 @@ def main():
         print("8. Сохранить и выйти")
 
         try:
-            choice = _input("Выберите пункт: ")
+            choice = int(_input("Выберите пункт: "))
+        except (ValueError, UnicodeDecodeError):
+            continue
         except (KeyboardInterrupt, EOFError):
             print()
             break
-        if not choice.isdigit():
-            continue
-        choice = int(choice)
 
         if choice == 0:
-            for r in system.generate_stock_report():
-                print(r)
+            print_table(system.generate_stock_report())
 
         elif choice == 1:
             _id = _input("ID: ", "id")
@@ -61,26 +67,19 @@ def main():
 
         elif choice == 4:
             name = _input("Введите название: ", "name")
-            results = system.find_by_name(name)
-            for r in results:
-                print(r)
+            print_table(system.find_by_name(name))
 
         elif choice == 5:
             category = _input("Введите категорию: ", "category")
-            results = system.find_by_category(category)
-            for r in results:
-                print(r)
+            print_table(system.find_by_name(name))
 
         elif choice == 6:
             min_p = _input("Мин. цена: ", "price")
             max_p = _input("Макс. цена: ", "price")
-            results = system.find_by_price_range(min_p, max_p)
-            for r in results:
-                print(r)
+            print_table(system.find_by_price_range(min_p, max_p))
 
         elif choice == 7:
-            for r in system.generate_stock_report(filter_by_stock=True):
-                print(r)
+            print_table(system.generate_stock_report(True))
 
         elif choice == 8:
             system.save_to_csv("assortment.csv")
