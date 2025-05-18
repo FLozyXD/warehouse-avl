@@ -1,6 +1,10 @@
 from inventory_system import InventorySystem
 
 
+# todo сделать общую функцию для обработки input()
+# todo как-нибудь красивее выводить найденные результаты?
+
+
 def main():
     system = InventorySystem(100)
     system.load_from_csv("assortment.csv")
@@ -29,7 +33,7 @@ def main():
         elif choice == "2":
             id = int(input("ID для удаления: "))
             result = system.delete_product(id)
-            print("Удалено." if result else "Товар не найден.")
+            print("Удалено." if result is not None else "Товар не найден.")
 
         elif choice == "3":
             id = int(input("ID товара: "))

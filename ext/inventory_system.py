@@ -16,18 +16,6 @@ class Property:
     def __lt__(self, other) -> bool:
         return self.value < other
 
-    def __le__(self, other) -> bool:
-        return self.value <= other
-
-    def __eq__(self, other) -> bool:
-        return self.value == other
-
-    def __ne__(self, other) -> bool:
-        return self.value != other
-
-    def __ge__(self, other) -> bool:
-        return self.value >= other
-
     def __gt__(self, other) -> bool:
         return self.value > other
 
@@ -36,7 +24,7 @@ class PropertyBank:
     def __init__(self):
         self.bank: List[Property] = list()
 
-    def b_search(self, value, force: bool = False) -> int:
+    def _search(self, value, force: bool = False) -> int:
         # Бинарный поиск. С флагом `force` всегда возвращает индекс
         west, east = 0, len(self.bank) - 1
         while west <= east:
@@ -49,62 +37,71 @@ class PropertyBank:
                 return center
         return west if force else -1
 
-    def get(self, value) -> List[SL_Node] | None:
-        if (index := self.b_search(value)) != -1:
+    def get(self, value) -> List[SL_Node]:
+        if (index := self._search(value)) != -1:
             return self.bank[index].links
-        return None
+        return list()
+
+    def get_by_slice(self, _from, _to) -> List[SL_Node]:
+        index_from = self._search(_from, force=True)
+        index_to = self._search(_to, force=True)
+
+        products = list()
+        for i in range(index_from, index_to + 1):
+            links = [
+                l
+                for l in self.bank[i].links
+                if l not in products and _from <= l.price <= _to
+            ]
+            products.extend(links)
+        return products
 
     def put(self, value, link: SL_Node) -> Property:
         # Возвращаем Property, чтобы можно было установить двойную связь
-        index = self.b_search(value, force=True)
+        index = self._search(value, force=True)
 
-        if self.bank[index] != value:
+        if index >= len(self.bank) or self.bank[index] != value:
             self.bank.insert(index, Property(value))
         self.bank[index].links.append(link)
 
         return self.bank[index]
 
-    def delete(self, value):
-        if (index := self.b_search(value)) != -1:
+    def delete(self, value, link: SL_Node):
+        if (index := self._search(value)) == -1:
+            raise ValueError(f"property {value!r} not in bank")
+
+        self.bank[index].links.remove(link)
+        if len(self.bank[index].links) == 0:
             self.bank.pop(index)
-        raise ValueError(f"property {value!r} not in bank")
 
 
-class Item:
-    def __init__(
-        self,
-        name: Property,
-        category: Property,
-        qty: Property,
-        price: Property,
-        min_qty: Property,
-    ):
-        self.name = name
-        self.category = category
-        self.qty = qty
-        self.price = price
-        self.min_qty = min_qty
+class Product:
+    __slots__ = "name", "category", "quantity", "price", "min_quantity"
+
+    def __repr__(self) -> str:
+        return "Product(%s)" % ", ".join(
+            str(getattr(self, attr).value) for attr in self.__slots__
+        )
 
 
 class InventorySystem:
     FIELDS = "Id", "Name", "Category", "Quantity", "Price", "Min_Allowed_Quantity"
 
     def __init__(self, size=100):
+        self.name_bank = PropertyBank()
+        self.category_bank = PropertyBank()
+        self.quantity_bank = PropertyBank()
+        self.price_bank = PropertyBank()
+        self.min_quantity_bank = PropertyBank()
+
         self.table = SL_HashTable(size)
 
     def load_from_csv(self, filename):
         with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                key = int(row["Id"])
-                data = {
-                    "Name": row["Name"],
-                    "Category": row["Category"],
-                    "Quantity": int(row["Quantity"]),
-                    "Price": float(row["Price"]),
-                    "Min_Allowed_Quantity": int(row["Min_Allowed_Quantity"]),
-                }
-                self.table.put(key, data)
+                _id, *props = [row[f] for f in self.FIELDS]
+                self.add_product(_id, *props)
 
     def save_to_csv(self, filename):
         with open(filename, "w", newline="", encoding="utf-8-sig") as f:
@@ -113,69 +110,56 @@ class InventorySystem:
             for i in range(self.table.size):
                 current = self.table.table[i].head
                 while current:
-                    key, data = current.value
-                    writer.writerow(
-                        {
-                            "Id": key,
-                            "Name": data["Name"],
-                            "Category": data["Category"],
-                            "Quantity": data["Quantity"],
-                            "Price": data["Price"],
-                            "Min_Allowed_Quantity": data["Min_Allowed_Quantity"],
-                        }
-                    )
+                    _id, product = current.value
+                    props = [getattr(product, p).value for p in product.__slots__]
+                    writer.writerow(dict(zip(self.FIELDS, [_id] + props)))
                     current = current.next
 
     def add_product(self, _id, name, category, quantity, price, min_quantity):
-        data = {
-            "Name": name,
-            "Category": category,
-            "Quantity": quantity,
-            "Price": price,
-            "Min_Allowed_Quantity": min_quantity,
-        }
-        self.table.put(_id, data)
+        # todo что если пользователь выставит отрицательные цену или кол-во?
+        product = Product()
+        product.name = self.name_bank.put(str(name), product)
+        product.category = self.category_bank.put(str(category), product)
+        product.quantity = self.quantity_bank.put(int(quantity), product)
+        product.price = self.price_bank.put(float(price), product)
+        product.min_quantity = self.min_quantity_bank.put(int(min_quantity), product)
+
+        self.table.put(int(_id), product)
 
     def delete_product(self, _id):
+        product = self.table.get(_id)
+        if product is None:
+            return None
+
+        self.name_bank.delete(product.name, product)
+        self.category_bank.delete(product.category, product)
+        self.quantity_bank.delete(product.quantity, product)
+        self.price_bank.delete(product.price, product)
+        self.min_quantity_bank.delete(product.min_quantity, product)
+
         return self.table.delkey(_id)
 
     def update_quantity(self, _id, new_quantity):
+        if new_quantity < 0:
+            raise ValueError("quantity can't be negative")
+
         node = self.table.get(_id)
-        if node:
-            node.value[1]["Quantity"] = new_quantity
-            return True
-        return False
+        if node is None:
+            return False
+        product = node.value[1]
+
+        self.quantity_bank.delete(product.quantity, product)
+        product.quantity = self.quantity_bank.put(new_quantity, product)
+        return True
 
     def find_by_name(self, name):
-        results = []
-        for bucket in self.table.table:
-            current = bucket.head
-            while current:
-                if name.lower() in current.value[1]["Name"].lower():
-                    results.append(current.value)
-                current = current.next
-        return results
+        return self.name_bank.get(name)
 
     def find_by_category(self, category):
-        results = []
-        for bucket in self.table.table:
-            current = bucket.head
-            while current:
-                if category.lower() == current.value[1]["Category"].lower():
-                    results.append(current.value)
-                current = current.next
-        return results
+        return self.category_bank.get(category)
 
     def find_by_price_range(self, min_price, max_price):
-        results = []
-        for bucket in self.table.table:
-            current = bucket.head
-            while current:
-                price = current.value[1]["Price"]
-                if min_price <= price <= max_price:
-                    results.append(current.value)
-                current = current.next
-        return results
+        return self.price_bank.get_by_slice(min_price, max_price)
 
     def generate_stock_report(self):
         print("Товары ниже минимального запаса:")
@@ -183,8 +167,8 @@ class InventorySystem:
             current = bucket.head
             while current:
                 product = current.value[1]
-                if product["Quantity"] < product["Min_Allowed_Quantity"]:
+                if product.quantity < product.min_quantity:
                     print(
-                        f'{product["Name"]} (Остаток: {product["Quantity"]}, Минимум: {product["Min_Allowed_Quantity"]})'
+                        f"{product.name.value} (Остаток: {product.quantity.value}, Минимум: {product.min_quantity.value})"
                     )
                 current = current.next
