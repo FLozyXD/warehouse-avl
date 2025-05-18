@@ -86,19 +86,18 @@ class PropertyBank:
             return self.bank[index].links
         return list()
 
-    def get_by_slice(self, _from, _to) -> List[Product]:
-        index_from = self._search(_from, force=True)
-        index_to = self._search(_to, force=True)
+    def get_range(self, _from, _to) -> Product:
+        if len(self.bank) == 0 or _from > self.bank[-1] or _from > _to:
+            return
+        # Поскольку мы используем `force`, индекс может быть некорректным
+        index_from = min(self._search(_from, force=True), len(self.bank) - 1)
+        index_to = min(self._search(_to, force=True), len(self.bank) - 1)
 
-        products = list()
         for i in range(index_from, index_to + 1):
             for link in self.bank[i].links:
-                if link in products:
-                    continue
                 if link.price < _from or link.price > _to:
                     continue
-                products.append(link)
-        return products
+                yield link
 
     def put(self, value, link: Product) -> Property:
         # Возвращаем Property, чтобы можно было установить двойную связь
@@ -197,7 +196,7 @@ class InventorySystem:
 
     def find_by_price_range(self, min_price: float, max_price: float):
         yield from self._generate_report_header()
-        for _price in self.price_bank.get_by_slice(min_price, max_price):
+        for _price in self.price_bank.get_range(min_price, max_price):
             yield self._format_product(_price)
 
     @staticmethod
