@@ -128,7 +128,7 @@ class InventorySystem:
         self.price_bank = PropertyBank()
         self.min_quantity_bank = PropertyBank()
 
-    def load_from_csv(self, filename):
+    def load_from_csv(self, filename: str):
         with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -137,7 +137,7 @@ class InventorySystem:
                 ]
                 self.add_product(*props)
 
-    def save_to_csv(self, filename):
+    def save_to_csv(self, filename: str):
         with open(filename, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=Product.__slots__)
             writer.writeheader()
@@ -146,7 +146,7 @@ class InventorySystem:
                 slots = {s: getattr(prop, s).value for s in Product.__slots__}
                 writer.writerow(slots)
 
-    def add_product(self, _id, name, category, quantity, price, min_quantity):
+    def add_product(self, _id: int, name: str, category: str, quantity: int, price: float, min_quantity: int):
         if quantity < 0 or price < 0 or min_quantity < 0:
             raise ValueError("integer properties can't be negative")
         product = Product()
@@ -157,7 +157,7 @@ class InventorySystem:
         product.price = self.price_bank.put(price, product)
         product.min_quantity = self.min_quantity_bank.put(min_quantity, product)
 
-    def delete_product(self, _id) -> bool:
+    def delete_product(self, _id: int) -> bool:
         product = self.id_bank.get(_id)
         if len(product) == 0:
             return False
@@ -172,7 +172,7 @@ class InventorySystem:
 
         return True
 
-    def update_quantity(self, _id, new_quantity):
+    def update_quantity(self, _id: int, new_quantity: int):
         if new_quantity < 0:
             raise ValueError("quantity can't be negative")
 
@@ -185,17 +185,17 @@ class InventorySystem:
         product.quantity = self.quantity_bank.put(new_quantity, product)
         return True
 
-    def find_by_name(self, name):
+    def find_by_name(self, name: str):
         yield from self._generate_report_header()
         for _name in self.name_bank.get(name):
             yield self._format_product(_name)
 
-    def find_by_category(self, category):
+    def find_by_category(self, category: str):
         yield from self._generate_report_header()
         for _category in self.category_bank.get(category):
             yield self._format_product(_category)
 
-    def find_by_price_range(self, min_price, max_price):
+    def find_by_price_range(self, min_price: float, max_price: float):
         yield from self._generate_report_header()
         for _price in self.price_bank.get_by_slice(min_price, max_price):
             yield self._format_product(_price)
