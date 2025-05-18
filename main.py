@@ -1,3 +1,5 @@
+import sys
+
 from ext.inventory import Product, InventorySystem
 
 
@@ -17,7 +19,7 @@ def print_table(strings):
 
 def main():
     system = InventorySystem()
-    system.load_from_csv("assortment.csv")
+    system.load_from_csv("assortment.csv" if len(sys.argv) < 2 else sys.argv[1])
 
     while True:
         print()
@@ -71,7 +73,7 @@ def main():
 
         elif choice == 5:
             category = _input("Введите категорию: ", "category")
-            print_table(system.find_by_name(name))
+            print_table(system.find_by_category(category))
 
         elif choice == 6:
             min_p = _input("Мин. цена: ", "price")
