@@ -149,7 +149,6 @@ class InventorySystem:
     def add_product(self, _id, name, category, quantity, price, min_quantity):
         if quantity < 0 or price < 0 or min_quantity < 0:
             raise ValueError("integer properties can't be negative")
-
         product = Product()
         product.id = self.id_bank.put(_id, product)
         product.name = self.name_bank.put(name, product)
