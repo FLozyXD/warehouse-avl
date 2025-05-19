@@ -188,7 +188,11 @@ class InventorySystem:
     def find_by_name(self, value: str):
         yield from self._format_header()
         bank = self.banks[Properties.NAME.value]
-        for product in bank.get(value):
+        if len(value) == 0:
+            return
+        top = value[:-1] + chr(ord(value[-1]) + 1)
+
+        for product in bank.get_range(value, top):
             yield self._format_product(product)
 
     def find_by_category(self, value: str):

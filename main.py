@@ -71,7 +71,7 @@ def main_loop(system: InventorySystem, filename: str):
             print("Товар не найден.")
 
     elif choice == 4:
-        name = _input("Введите название: ", PropertyName)
+        name = _input("Введите часть названия: ", PropertyName)
         print_table(system.find_by_name(name))
 
     elif choice == 5:
