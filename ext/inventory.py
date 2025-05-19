@@ -38,33 +38,27 @@ class Property:
 
 
 class PropertyID(Property):
-    CAST = int
-    WIDTH = 4
+    CAST, WIDTH = int, 4
 
 
 class PropertyName(Property):
-    CAST = str
-    WIDTH = 32
+    CAST, WIDTH = str, 32
 
 
 class PropertyCategory(Property):
-    CAST = str
-    WIDTH = 32
+    CAST, WIDTH = str, 32
 
 
 class PropertyQuantity(Property):
-    CAST = int
-    WIDTH = 8
+    CAST, WIDTH = int, 8
 
 
 class PropertyPrice(Property):
-    CAST = int
-    WIDTH = 6
+    CAST, WIDTH = int, 6
 
 
 class PropertyMinQuantity(Property):
-    CAST = int
-    WIDTH = 12
+    CAST, WIDTH = int, 12
 
 
 class Properties(Enum):
@@ -184,7 +178,7 @@ class InventorySystem:
         for i, _property in enumerate(Product.keys()):
             link = self.banks[i].put(properties[i], product, i)
             if i == 0 and len(link.links) != 1:
-                raise ValueError("conflicting ids") 
+                raise ValueError("conflicting ids")
             setattr(product, _property, link)
 
     def _get_by_id(self, _id: int) -> Product | None:
