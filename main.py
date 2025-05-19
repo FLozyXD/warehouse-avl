@@ -14,7 +14,7 @@ from ext.inventory import (
 
 def _input(string: str, _property: Property | None = None):
     value = input(string).strip()
-    if value == "": # Обработка пустых значений
+    if value == "":  # Обработка пустых значений
         raise ValueError("Value must be unempty")
     if _property is None:
         return value

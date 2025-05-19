@@ -5,15 +5,16 @@ from .trees import AVLTree
 
 
 class Property:
-    '''Класс-обёртка для каждого свойства. Хранит значение, ссылки на связанные товары
-    и правила приведения/проверки (_cast_value), сравнение.\n
-    Используется внутри банков (Bank) и AVLTree как ключ.'''
+    """Класс-обёртка для каждого свойства. Хранит значение, ссылки на связанные товары
+    и правила приведения/проверки (_cast_value), сравнение.
+    Используется внутри банков (Bank) и AVLTree как ключ."""
+
     __slots__ = "value", "links", "CAST", "WIDTH"
 
     @classmethod
     def _cast_value(self, value):
-        '''Проверяем и приводим к нужному типу (int/str).
-        Для int не допускаем отрицательных и некорректных строк.'''
+        """Проверяем и приводим к нужному типу (int/str).
+        Для int не допускаем отрицательных и некорректных строк."""
         if self.CAST is int:
             if isinstance(value, int) and value < 0:
                 raise ValueError("integer properties cannot be negative")
@@ -74,8 +75,9 @@ class PropertyMinQuantity(Property):
 
 
 class Properties(Enum):
-    '''Перечисление свойств в порядке: ID, NAME, CATEGORY, QUANTITY, PRICE, MIN_QUANTITY\n
-    Используется для индексов банков и при вставке в правильный банк'''
+    """Перечисление свойств в порядке: ID, NAME, CATEGORY, QUANTITY, PRICE, MIN_QUANTITY
+    Используется для индексов банков и при вставке в правильный банк"""
+
     ID = 0
     NAME = 1
     CATEGORY = 2
@@ -97,47 +99,49 @@ PROPERTIES = (
 
 
 class Product:
-    '''Контейнер для товара: хранит 6 ссылок на объекты PropertyX\n
-    Слоты соответствуют именам полей: 'id', 'name', 'category', ...'''
+    """Контейнер для товара: хранит 6 ссылок на объекты PropertyX
+    Слоты соответствуют именам полей: 'id', 'name', 'category', ..."""
+
     __slots__ = tuple(p.name.lower() for p in Properties)
 
     @classmethod
     def keys(self) -> [str]:
-        '''Имена колонок/порядок полей для CSV и форматирования'''
+        """Имена колонок/порядок полей для CSV и форматирования"""
         return self.__slots__
 
     def values(self) -> [Property]:
-        '''Сырые значения всех свойств в порядке slots'''
+        """Сырые значения всех свойств в порядке slots"""
         return [getattr(self, p).value for p in self.__slots__]
 
     def items(self) -> [(str, Property)]:
-        '''Пары (ключ, значение) для записи в CSV'''
+        """Пары (ключ, значение) для записи в CSV"""
         return [(p, getattr(self, p).value) for p in self.__slots__]
 
 
 class Bank:
-    '''Bank — один AVL-банк для одного свойства\n
-    Хранит AVLTree ключей PropertyX, в узлах которого списки связанных Product'''
+    """Bank — один AVL-банк для одного свойства
+    Хранит AVLTree ключей PropertyX, в узлах которого списки связанных Product"""
+
     __slots__ = ("tree",)
 
     def __init__(self):
         self.tree: [Property] = AVLTree()
 
     def get(self, value) -> [Product]:
-        '''Точный поиск узла с ключом == value'''
+        """Точный поиск узла с ключом == value"""
         if (node := self.tree.search(self.tree.root, value)) is None:
             return list()
         return node.key.links
 
     def get_range(self, _from, _to) -> Product:
-        '''По диапазону признака: перебор узлов с ключами в [_from, _to]'''
+        """По диапазону признака: перебор узлов с ключами в [_from, _to]"""
         if _from > _to:
             return
         for node in self.tree.traverse_range(self.tree.root, _from, _to):
             yield from node.key.links
 
     def put(self, value, link: Product, _enum_index: int) -> Property:
-        '''Вставка или обновление PropertyX(value), возвращаем ссылку'''
+        """Вставка или обновление PropertyX(value), возвращаем ссылку"""
         _object = PROPERTIES[_enum_index]
         value = _object._cast_value(value)
 
@@ -151,7 +155,7 @@ class Bank:
         return _property
 
     def delete(self, value, link: Product):
-        '''Удаляем связь product→Property, и если links пуст, удаляем узел'''
+        """Удаляем связь product→Property, и если links пуст, удаляем узел"""
         if (node := self.tree.search(self.tree.root, value)) is None:
             raise ValueError(f"property {value!r} not in bank")
         node.key.links.remove(link)
@@ -182,7 +186,7 @@ class InventorySystem:
                 writer.writerow(dict(_property.key.links[0].items()))
 
     def add_product(self, *properties):
-        '''Для каждого свойства: вставляем/обновляем bank, получаем Property-ссылку'''
+        """Для каждого свойства: вставляем/обновляем bank, получаем Property-ссылку"""
         product = Product()
         for i, _property in enumerate(Product.keys()):
             link = self.banks[i].put(properties[i], product, i)
@@ -195,7 +199,7 @@ class InventorySystem:
         return None if len(links) == 0 else links[0]
 
     def delete_product(self, _id: int) -> bool:
-        '''Удаляем все связи по всем банкам'''
+        """Удаляем все связи по всем банкам"""
         if (product := self._get_by_id(_id)) is None:
             return False
         for i, _property in enumerate(Product.keys()):
@@ -204,7 +208,7 @@ class InventorySystem:
         return True
 
     def update_quantity(self, _id: int, quantity: int) -> bool:
-        '''Аналогично: удаляем старую связь, вставляем новую'''
+        """Аналогично: удаляем старую связь, вставляем новую"""
         if (product := self._get_by_id(_id)) is None:
             return False
         _enum_index = Properties.QUANTITY.value
@@ -215,7 +219,7 @@ class InventorySystem:
         return True
 
     def find_by_name(self, value: str):
-        '''Ищем все имена, начинающиеся с prefix'''
+        """Ищем все имена, начинающиеся с prefix"""
         yield from self._format_header()
         bank = self.banks[Properties.NAME.value]
         if len(value) == 0:
@@ -274,7 +278,7 @@ class InventorySystem:
             for _property in tree.traverse(tree.root):
                 yield self._format_product(_property.key.links[0])
             return
-        
+
         # иначе — идём по количеству и выводим только тех, у кого qty < min_quantity
         tree = self.banks[Properties.QUANTITY.value].tree
         for _property in tree.traverse(tree.root):
