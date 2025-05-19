@@ -18,8 +18,9 @@ def print_table(strings):
 
 
 def main():
+    filename = "assortment.csv" if len(sys.argv) != 2 else sys.argv[1]
     system = InventorySystem()
-    system.load_from_csv("assortment.csv" if len(sys.argv) < 2 else sys.argv[1])
+    system.load_from_csv(filename)
 
     while True:
         print()

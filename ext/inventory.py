@@ -1,14 +1,22 @@
 import csv
-from typing import List
+from enum import Enum
 
 
 class Property:
-    def __init__(self, value):
-        self.value = value
-        self.links: List[Product] = list()
+    __slots__ = "value", "links", "CAST", "WIDTH"
 
-    def __repr__(self) -> str:
-        return f"Property({self.value!r})"
+    @classmethod
+    def _cast_value(self, value):
+        if self.CAST is int:
+            if isinstance(value, int) and value < 0:
+                raise ValueError("integer properties cannot be negative")
+            if not isinstance(value, int) and not value.isdigit():
+                raise TypeError(f"cannot cast {value!r} to positive int")
+        return self.CAST(value)
+
+    def __init__(self, value, link):
+        self.value = self._cast_value(value)
+        self.links = [link]
 
     def __lt__(self, other) -> bool:
         return self.value < other
@@ -29,44 +37,74 @@ class Property:
         return self.value > other
 
 
+class PropertyID(Property):
+    CAST = int
+    WIDTH = 4
+
+
+class PropertyName(Property):
+    CAST = str
+    WIDTH = 32
+
+
+class PropertyCategory(Property):
+    CAST = str
+    WIDTH = 32
+
+
+class PropertyQuantity(Property):
+    CAST = int
+    WIDTH = 8
+
+
+class PropertyPrice(Property):
+    CAST = int
+    WIDTH = 6
+
+
+class PropertyMinQuantity(Property):
+    CAST = int
+    WIDTH = 12
+
+
+class Properties(Enum):
+    ID = 0
+    NAME = 1
+    CATEGORY = 2
+    QUANTITY = 3
+    PRICE = 4
+    MIN_QUANTITY = 5
+
+
+PROPERTIES = (
+    PropertyID,
+    PropertyName,
+    PropertyCategory,
+    PropertyQuantity,
+    PropertyPrice,
+    PropertyMinQuantity,
+)
+
+
 class Product:
-    PROTO = {
-        "id": {
-            "type": int,
-            "width": 4,
-        },
-        "name": {
-            "type": str,
-            "width": 32,
-        },
-        "category": {
-            "type": str,
-            "width": 32,
-        },
-        "quantity": {
-            "type": int,
-            "width": 4,
-        },
-        "price": {
-            "type": int,
-            "width": 4,
-        },
-        "min_quantity": {
-            "type": int,
-            "width": 4,
-        },
-    }
-    __slots__ = tuple(PROTO.keys())
+    __slots__ = tuple(p.name.lower() for p in Properties)
 
-    def __repr__(self) -> str:
-        return "Product(%s)" % ", ".join(
-            str(getattr(self, attr).value) for attr in self.__slots__
-        )
+    @classmethod
+    def keys(self) -> [str]:
+        return self.__slots__
+
+    def values(self) -> [Property]:
+        return [getattr(self, p).value for p in self.__slots__]
+
+    def items(self) -> [(str, Property)]:
+        return [(p, getattr(self, p).value) for p in self.__slots__]
 
 
-class PropertyBank:
+class Bank:
+    __slots__ = ("bank",)
+
     def __init__(self):
-        self.bank: List[Property] = list()
+        self.bank: [Property] = list()
 
     def _search(self, value, force: bool = False) -> int:
         # Бинарный поиск. С флагом `force` всегда возвращает индекс
@@ -81,7 +119,7 @@ class PropertyBank:
                 return center
         return west if force else -1
 
-    def get(self, value) -> List[Product]:
+    def get(self, value) -> [Product]:
         if (index := self._search(value)) != -1:
             return self.bank[index].links
         return list()
@@ -99,14 +137,16 @@ class PropertyBank:
                     continue
                 yield link
 
-    def put(self, value, link: Product) -> Property:
-        # Возвращаем Property, чтобы можно было установить двойную связь
-        index = self._search(value, force=True)
+    def put(self, value, link: Product, _enum_index: int) -> Property:
+        _object = PROPERTIES[_enum_index]
+        index = self._search(_object._cast_value(value), force=True)
 
         if index >= len(self.bank) or self.bank[index] != value:
-            self.bank.insert(index, Property(value))
-        self.bank[index].links.append(link)
+            self.bank.insert(index, _object(value, link))
+        else:
+            self.bank[index].links.append(link)
 
+        # Возвращаем Property, чтобы можно было установить двойную связь
         return self.bank[index]
 
     def delete(self, value, link: Product):
@@ -119,118 +159,103 @@ class PropertyBank:
 
 
 class InventorySystem:
+    __slots__ = ("banks",)
+
     def __init__(self):
-        self.id_bank = PropertyBank()
-        self.name_bank = PropertyBank()
-        self.category_bank = PropertyBank()
-        self.quantity_bank = PropertyBank()
-        self.price_bank = PropertyBank()
-        self.min_quantity_bank = PropertyBank()
+        self.banks = [Bank() for _ in range(len(Properties))]
 
     def load_from_csv(self, filename: str):
         with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                props = [
-                    meta["type"](row[attr]) for attr, meta in Product.PROTO.items()
-                ]
-                self.add_product(*props)
+                properties = [row[p] for p in Product.keys()]
+                self.add_product(*properties)
 
     def save_to_csv(self, filename: str):
         with open(filename, "w", newline="", encoding="utf-8-sig") as f:
-            writer = csv.DictWriter(f, fieldnames=Product.__slots__)
+            writer = csv.DictWriter(f, fieldnames=Product.keys())
             writer.writeheader()
-            for prop in self.id_bank.bank:
-                prop = prop.links[0]
-                slots = {s: getattr(prop, s).value for s in Product.__slots__}
-                writer.writerow(slots)
+            for _property in self.banks[Properties.ID.value].bank:
+                writer.writerow(dict(_property.links[0].items()))
 
-    def add_product(self, _id: int, name: str, category: str, quantity: int, price: float, min_quantity: int):
-        if quantity < 0 or price < 0 or min_quantity < 0:
-            raise ValueError("integer properties can't be negative")
+    def add_product(self, *properties):
         product = Product()
-        product.id = self.id_bank.put(_id, product)
-        product.name = self.name_bank.put(name, product)
-        product.category = self.category_bank.put(category, product)
-        product.quantity = self.quantity_bank.put(quantity, product)
-        product.price = self.price_bank.put(price, product)
-        product.min_quantity = self.min_quantity_bank.put(min_quantity, product)
+        for i, _property in enumerate(Product.keys()):
+            link = self.banks[i].put(properties[i], product, i)
+            setattr(product, _property, link)
+
+    def _get_by_id(self, _id: int) -> Product | None:
+        links = self.banks[Properties.ID.value].get(_id)
+        return None if len(links) == 0 else links[0]
 
     def delete_product(self, _id: int) -> bool:
-        product = self.id_bank.get(_id)
-        if len(product) == 0:
+        if (product := self._get_by_id(_id)) is None:
             return False
-        product = product[0]
-
-        self.id_bank.delete(_id, product)
-        self.name_bank.delete(product.name, product)
-        self.category_bank.delete(product.category, product)
-        self.quantity_bank.delete(product.quantity, product)
-        self.price_bank.delete(product.price, product)
-        self.min_quantity_bank.delete(product.min_quantity, product)
-
+        for i, _property in enumerate(Product.keys()):
+            link = getattr(product, _property)
+            self.banks[i].delete(link, product)
         return True
 
-    def update_quantity(self, _id: int, new_quantity: int):
-        if new_quantity < 0:
-            raise ValueError("quantity can't be negative")
-
-        product = self.id_bank.get(_id)
-        if len(product) == 0:
+    def update_quantity(self, _id: int, quantity: int) -> bool:
+        if (product := self._get_by_id(_id)) is None:
             return False
-        product = product[0]
+        _enum_index = Properties.QUANTITY.value
+        bank = self.banks[_enum_index]
 
-        self.quantity_bank.delete(product.quantity, product)
-        product.quantity = self.quantity_bank.put(new_quantity, product)
+        bank.delete(product.quantity, product)
+        product.quantity = bank.put(quantity, product, _enum_index)
         return True
 
-    def find_by_name(self, name: str):
-        yield from self._generate_report_header()
-        for _name in self.name_bank.get(name):
-            yield self._format_product(_name)
+    def find_by_name(self, value: str):
+        yield from self._format_header()
+        bank = self.banks[Properties.NAME.value]
+        for product in bank.get(value):
+            yield self._format_product(product)
 
-    def find_by_category(self, category: str):
-        yield from self._generate_report_header()
-        for _category in self.category_bank.get(category):
-            yield self._format_product(_category)
+    def find_by_category(self, value: str):
+        yield from self._format_header()
+        bank = self.banks[Properties.CATEGORY.value]
+        for product in bank.get(value):
+            yield self._format_product(product)
 
-    def find_by_price_range(self, min_price: float, max_price: float):
-        yield from self._generate_report_header()
-        for _price in self.price_bank.get_range(min_price, max_price):
-            yield self._format_product(_price)
+    def find_by_price_range(self, _from: int, _to: int):
+        yield from self._format_header()
+        bank = self.banks[Properties.PRICE.value]
+        for product in bank.get_range(_from, _to):
+            yield self._format_product(product)
 
     @staticmethod
-    def cut_value(value, width: int) -> str:
+    def _cut_value(value, width: int) -> str:
         value = str(value)
         if len(value) <= width:
             return value.ljust(width)
         return "%s..." % value[: width - 3]
 
     def _format_product(self, product: Product) -> str:
-        return " | ".join(
-            self.cut_value(getattr(product, attr).value, max(len(attr), meta["width"]))
-            for attr, meta in Product.PROTO.items()
+        string = " | ".join(
+            self._cut_value(v, PROPERTIES[i].WIDTH)
+            for i, v in enumerate(product.values())
         )
+        return string
 
     @staticmethod
-    def _generate_report_header() -> str:
-        header = " | ".join(
-            attr.ljust(meta["width"]) for attr, meta in Product.PROTO.items()
+    def _format_header() -> str:
+        string = " | ".join(
+            k.ljust(PROPERTIES[i].WIDTH) for i, k in enumerate(Product.keys())
         )
-        yield header
-        yield "-" * len(header)
+        yield string
+        yield "-" * len(string)
 
     def generate_stock_report(self, filter_by_stock: bool = False) -> str:
-        yield from self._generate_report_header()
+        yield from self._format_header()
 
         if not filter_by_stock:
-            for prop in self.id_bank.bank:
-                yield self._format_product(prop.links[0])
+            for _property in self.banks[Properties.ID.value].bank:
+                yield self._format_product(_property.links[0])
             return
 
-        for prop in self.quantity_bank.bank:
-            quantity = prop.value
-            for link in prop.links:
-                if quantity >= link.min_quantity:
+        for _property in self.banks[Properties.QUANTITY.value].bank:
+            for link in _property.links:
+                if _property.value >= link.min_quantity:
                     continue
                 yield self._format_product(link)
