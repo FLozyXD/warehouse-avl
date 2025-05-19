@@ -120,7 +120,7 @@ class Bank:
         if (node := self.tree.search(self.tree.root, value)) is None:
             _property = _object(value)
             self.tree.root = self.tree.insert(self.tree.root, _property)
-        else: 
+        else:
             _property = node.key
 
         _property.links.append(link)

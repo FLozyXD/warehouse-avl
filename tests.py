@@ -4,6 +4,7 @@ import os
 
 from ext.inventory import InventorySystem, Product
 
+
 class TestInventorySystem(unittest.TestCase):
     def setUp(self):
         self.system = InventorySystem()
@@ -18,7 +19,9 @@ class TestInventorySystem(unittest.TestCase):
         self.assertGreaterEqual(len(results) - 2, 2, "Должно быть два товара Milk")
         # Поиск по категории 'Dairy' должен вернуть два товара
         results_cat = list(self.system.find_by_category("Dairy"))
-        self.assertGreaterEqual(len(results_cat) - 2, 2, "Должно быть два товара категории Dairy")
+        self.assertGreaterEqual(
+            len(results_cat) - 2, 2, "Должно быть два товара категории Dairy"
+        )
 
     def test_price_range_search(self):
         self.system.add_product(1, "Item1", "Cat", 10, 99, 1)
@@ -29,14 +32,18 @@ class TestInventorySystem(unittest.TestCase):
         found = [row for row in results if "Item2" in row or "Item3" in row]
         self.assertTrue(any("Item2" in row for row in found))
         self.assertTrue(any("Item3" in row for row in found))
-        self.assertFalse(any("Item1" in row for row in results), "Item1 не должен быть включен")
+        self.assertFalse(
+            any("Item1" in row for row in results), "Item1 не должен быть включен"
+        )
 
     def test_update_quantity(self):
         self.system.add_product(1, "Prod", "Cat", 50, 100, 10)
         # успешное обновление
         self.assertTrue(self.system.update_quantity(1, 25))
         rows = list(self.system.find_by_name("Prod"))
-        self.assertTrue(any("25" in row for row in rows), "Количество должно измениться на 25")
+        self.assertTrue(
+            any("25" in row for row in rows), "Количество должно измениться на 25"
+        )
         # обновление несуществующего
         self.assertFalse(self.system.update_quantity(999, 10))
         # отрицательное значение
@@ -59,14 +66,17 @@ class TestInventorySystem(unittest.TestCase):
         # header + separator + строки
         # убедимся, что A есть, B нет
         self.assertTrue(any("A" in row for row in report), "A должен быть в отчете")
-        self.assertFalse(any("B" in row for row in report if row and row.startswith(' ')), "B не должен быть в отчете")
+        self.assertFalse(
+            any("B" in row for row in report if row and row.startswith(" ")),
+            "B не должен быть в отчете",
+        )
 
     def test_save_and_load_csv(self):
         # добавляем товары
         self.system.add_product(1, "Milk", "Dairy", 50, 100, 10)
         self.system.add_product(2, "Bread", "Bakery", 20, 50, 5)
         # сохраняем во временный файл
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
         tmp_name = tmp.name
         tmp.close()
         try:
@@ -106,5 +116,6 @@ class TestInventorySystem(unittest.TestCase):
         self.assertEqual(self.system.update_quantity("not_int", 10), False)
         self.assertEqual(self.system.delete_product("not_int"), False)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

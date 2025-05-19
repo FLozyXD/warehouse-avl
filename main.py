@@ -92,7 +92,7 @@ def main_loop(system: InventorySystem, filename: str):
         return 0
 
     else:
-        print("Неверный выбор.")    
+        print("Неверный выбор.")
 
 
 def main():
