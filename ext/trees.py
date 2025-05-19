@@ -56,6 +56,7 @@ class TreeTools:
         return current
 
     def search(self, node, key):
+        '''Обычный BST-поиск'''
         if node is None or node.key == key:
             return node
         if key < node.key:
@@ -63,11 +64,13 @@ class TreeTools:
         return self.search(node.right, key)
 
     def traverse(self, node):
+        '''Инфиксный обход: левое → текущий → правое'''
         if node is None:
             return []
         return self.traverse(node.left) + [node] + self.traverse(node.right)
 
     def traverse_range(self, node, low, high):
+        '''Обход только тех узлов, ключи которых в [low, high]'''
         if node is None:
             return
         if node.key > low:
