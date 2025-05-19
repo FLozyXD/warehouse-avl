@@ -139,8 +139,9 @@ class Bank:
 
     def put(self, value, link: Product, _enum_index: int) -> Property:
         _object = PROPERTIES[_enum_index]
-        index = self._search(_object._cast_value(value), force=True)
+        value = _object._cast_value(value)
 
+        index = self._search(value, force=True)
         if index >= len(self.bank) or self.bank[index] != value:
             self.bank.insert(index, _object(value, link))
         else:
@@ -182,6 +183,8 @@ class InventorySystem:
         product = Product()
         for i, _property in enumerate(Product.keys()):
             link = self.banks[i].put(properties[i], product, i)
+            if i == 0 and len(link.links) != 1:
+                raise ValueError("conflicting ids") 
             setattr(product, _property, link)
 
     def _get_by_id(self, _id: int) -> Product | None:
