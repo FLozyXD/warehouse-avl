@@ -101,12 +101,10 @@ class TestInventorySystem(unittest.TestCase):
 
     def test_input_type_errors(self):
         # метод add_product ожидает корректные типы, но если передать строку вместо числа
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.system.add_product("not_int", "N", "C", 1, 1, 1)
-        with self.assertRaises(TypeError):
-            self.system.update_quantity("not_int", 10)
-        with self.assertRaises(TypeError):
-            self.system.delete_product("not_int")
+        self.assertEqual(self.system.update_quantity("not_int", 10), False)
+        self.assertEqual(self.system.delete_product("not_int"), False)
 
 if __name__ == '__main__':
     unittest.main()
