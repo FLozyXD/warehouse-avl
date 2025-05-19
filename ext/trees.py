@@ -4,12 +4,14 @@ import sys
 
 sys.setrecursionlimit(20000)
 
+
 class Node:
     def __init__(self, key):
         self.key: int = key
         self.left: Node = None
         self.right: Node = None
         self.height: int = 1
+
 
 class TreeTools:
 
@@ -46,13 +48,13 @@ class TreeTools:
         if not node:
             return 0
         return node.height
-    
+
     def min_value_node(self, node):
         current = node
         while current.left is not None:
             current = current.left
         return current
-        
+
     def search(self, node, key):
         if node is None or node.key == key:
             return node
@@ -75,6 +77,7 @@ class TreeTools:
         if node.key < high:
             yield from self.traverse_range(node.right, low, high)
 
+
 class BSTree(TreeTools):
 
     def __init__(self):
@@ -83,12 +86,12 @@ class BSTree(TreeTools):
     def insert(self, node, key):
         if node is None:
             return Node(key)
-        
+
         if key < node.key:
             node.left = self.insert(node.left, key)
         elif key > node.key:
             node.right = self.insert(node.right, key)
-        
+
         node.height = 1 + max(self.get_height(node.left), self.get_height(node.right))
         return node
 
@@ -105,13 +108,15 @@ class BSTree(TreeTools):
                 return node.right
             elif node.right is None:
                 return node.left
-            
+
             temp_val = self.min_value_node(node.right)
             node.key = temp_val.key
             node.right = self.delete(node.right, temp_val.key)
-        
+
         if node:
-            node.height = 1 + max(self.get_height(node.left), self.get_height(node.right))
+            node.height = 1 + max(
+                self.get_height(node.left), self.get_height(node.right)
+            )
         return node
 
 
@@ -119,12 +124,15 @@ class AVLTree(TreeTools):
     """
     Класс для AVL-дерева (самобалансирующегося бинарного дерева поиска).
     """
+
     def __init__(self):
         self.root = None
 
     def update_height(self, node):
         if node:
-            node.height = 1 + max(self.get_height(node.left), self.get_height(node.right))
+            node.height = 1 + max(
+                self.get_height(node.left), self.get_height(node.right)
+            )
 
     def get_balance_factor(self, node):
         if not node:
@@ -157,7 +165,7 @@ class AVLTree(TreeTools):
         elif key > node.key:
             node.right = self.insert(node.right, key)
         else:
-            return node 
+            return node
 
         self.update_height(node)
         balance = self.get_balance_factor(node)
@@ -172,7 +180,7 @@ class AVLTree(TreeTools):
         if balance < -1 and key < node.right.key:
             node.right = self.right_rotate(node.right)
             return self.left_rotate(node)
-        
+
         return node
 
     def delete(self, node, key):
@@ -192,7 +200,7 @@ class AVLTree(TreeTools):
                 temp = node.left
                 node = None
                 return temp
-            
+
             temp = self.min_value_node(node.right)
             node.key = temp.key
             node.right = self.delete(node.right, temp.key)
@@ -203,26 +211,28 @@ class AVLTree(TreeTools):
         self.update_height(node)
         balance = self.get_balance_factor(node)
 
-        if balance > 1 and self.get_balance_factor(node.left) >= 0: # LL
+        if balance > 1 and self.get_balance_factor(node.left) >= 0:  # LL
             return self.right_rotate(node)
-        if balance < -1 and self.get_balance_factor(node.right) <= 0: # RR
+        if balance < -1 and self.get_balance_factor(node.right) <= 0:  # RR
             return self.left_rotate(node)
-        if balance > 1 and self.get_balance_factor(node.left) < 0: # LR
+        if balance > 1 and self.get_balance_factor(node.left) < 0:  # LR
             node.left = self.left_rotate(node.left)
             return self.right_rotate(node)
-        if balance < -1 and self.get_balance_factor(node.right) > 0: # RL
+        if balance < -1 and self.get_balance_factor(node.right) > 0:  # RL
             node.right = self.right_rotate(node.right)
             return self.left_rotate(node)
-            
+
         return node
 
 
 # --- Генерация данных ---
 def generate_random_data(size):
-    return random.sample(range(size * 3), size) 
+    return random.sample(range(size * 3), size)
+
 
 def generate_sorted_data(size):
     return list(range(size))
+
 
 def generate_pattern_data(size):
     data = []
@@ -235,12 +245,13 @@ def generate_pattern_data(size):
             data.append(current_val + i * block_size)
 
         if len(data) < size:
-             data.append(current_val + i * block_size + 2)
+            data.append(current_val + i * block_size + 2)
 
         if len(data) < size:
             data.append(current_val + i * block_size + 1)
         i += 1
     return data[:size]
+
 
 # --- Тестирование и сбор статистики ---
 def test(tree_class, data):
@@ -249,12 +260,13 @@ def test(tree_class, data):
     for item in data:
         tree.root = tree.insert(tree.root, item)
     end_time = time.perf_counter()
-    
-    build_time = (end_time - start_time) * 1000 
+
+    build_time = (end_time - start_time) * 1000
     avg_depth = tree.get_average_depth(tree.root)
     max_depth = tree.get_max_depth(tree.root)
-    
+
     return build_time, avg_depth, max_depth
+
 
 def print_results_table(results_list, headers):
 
@@ -284,7 +296,7 @@ if __name__ == "__main__":
     NUM_ELEMENTS = 15
 
     print(f"--- Тестирование AVL и BST на {NUM_ELEMENTS} элементах ---\n")
-    
+
     if NUM_ELEMENTS <= 15:
         print("Пример построения AVL-дерева:")
         avl_small = AVLTree()
@@ -312,27 +324,52 @@ if __name__ == "__main__":
                 print(f"Элемент {el_to_del} не найден для удаления в малом AVL дереве.")
         print("-" * 50 + "\n")
 
-
     sets = {
         "Случайные числа": generate_random_data(NUM_ELEMENTS),
         "Отсортированная посл.": generate_sorted_data(NUM_ELEMENTS),
-        "Паттерн вставки (1,3,2,...)": generate_pattern_data(NUM_ELEMENTS)
+        "Паттерн вставки (1,3,2,...)": generate_pattern_data(NUM_ELEMENTS),
     }
 
     results_data = []
 
     for name, data in sets.items():
         print(f"Набор: {name}")
-        
+
         bst_build_time, bst_avg_depth, bst_max_depth = test(BSTree, data)
-        results_data.append([name, "BST", f"{bst_build_time:.2f} мс", f"{bst_avg_depth:.2f}", bst_max_depth])
-        print(f"  BST: Время={bst_build_time:.2f} мс, Ср.глубина={bst_avg_depth:.2f}, Макс.глубина={bst_max_depth}")
+        results_data.append(
+            [
+                name,
+                "BST",
+                f"{bst_build_time:.2f} мс",
+                f"{bst_avg_depth:.2f}",
+                bst_max_depth,
+            ]
+        )
+        print(
+            f"  BST: Время={bst_build_time:.2f} мс, Ср.глубина={bst_avg_depth:.2f}, Макс.глубина={bst_max_depth}"
+        )
 
         avl_build_time, avl_avg_depth, avl_max_depth = test(AVLTree, data)
-        results_data.append([name, "AVL", f"{avl_build_time:.2f} мс", f"{avl_avg_depth:.2f}", avl_max_depth])
-        print(f"  AVL: Время={avl_build_time:.2f} мс, Ср.глубина={avl_avg_depth:.2f}, Макс.глубина={avl_max_depth}\n")
+        results_data.append(
+            [
+                name,
+                "AVL",
+                f"{avl_build_time:.2f} мс",
+                f"{avl_avg_depth:.2f}",
+                avl_max_depth,
+            ]
+        )
+        print(
+            f"  AVL: Время={avl_build_time:.2f} мс, Ср.глубина={avl_avg_depth:.2f}, Макс.глубина={avl_max_depth}\n"
+        )
 
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
     print("Таблица результатов:")
-    table_headers = ["Набор данных", "Тип дерева", "Время построения", "Средняя глубина", "Макс. глубина"]
+    table_headers = [
+        "Набор данных",
+        "Тип дерева",
+        "Время построения",
+        "Средняя глубина",
+        "Макс. глубина",
+    ]
     print_results_table(results_data, table_headers)
