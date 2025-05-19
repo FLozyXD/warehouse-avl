@@ -1,6 +1,8 @@
 import csv
 from enum import Enum
 
+from .trees import AVLTree
+
 
 class Property:
     __slots__ = "value", "links", "CAST", "WIDTH"
@@ -14,9 +16,9 @@ class Property:
                 raise TypeError(f"cannot cast {value!r} to positive int")
         return self.CAST(value)
 
-    def __init__(self, value, link):
+    def __init__(self, value):
         self.value = self._cast_value(value)
-        self.links = [link]
+        self.links = list()
 
     def __lt__(self, other) -> bool:
         return self.value < other
@@ -95,62 +97,41 @@ class Product:
 
 
 class Bank:
-    __slots__ = ("bank",)
+    __slots__ = ("tree",)
 
     def __init__(self):
-        self.bank: [Property] = list()
-
-    def _search(self, value, force: bool = False) -> int:
-        # Бинарный поиск. С флагом `force` всегда возвращает индекс
-        west, east = 0, len(self.bank) - 1
-        while west <= east:
-            center = (west + east) >> 1
-            if self.bank[center] < value:
-                west = center + 1
-            elif self.bank[center] > value:
-                east = center - 1
-            else:
-                return center
-        return west if force else -1
+        self.tree: [Property] = AVLTree()
 
     def get(self, value) -> [Product]:
-        if (index := self._search(value)) != -1:
-            return self.bank[index].links
-        return list()
+        if (node := self.tree.search(self.tree.root, value)) is None:
+            return list()
+        return node.key.links
 
     def get_range(self, _from, _to) -> Product:
-        if len(self.bank) == 0 or _from > self.bank[-1] or _from > _to:
+        if _from > _to:
             return
-        # Поскольку мы используем `force`, индекс может быть некорректным
-        index_from = min(self._search(_from, force=True), len(self.bank) - 1)
-        index_to = min(self._search(_to, force=True), len(self.bank) - 1)
-
-        for i in range(index_from, index_to + 1):
-            for link in self.bank[i].links:
-                if link.price < _from or link.price > _to:
-                    continue
-                yield link
+        for node in self.tree.traverse_range(self.tree.root, _from, _to):
+            yield from node.key.links
 
     def put(self, value, link: Product, _enum_index: int) -> Property:
         _object = PROPERTIES[_enum_index]
         value = _object._cast_value(value)
 
-        index = self._search(value, force=True)
-        if index >= len(self.bank) or self.bank[index] != value:
-            self.bank.insert(index, _object(value, link))
-        else:
-            self.bank[index].links.append(link)
+        if (node := self.tree.search(self.tree.root, value)) is None:
+            _property = _object(value)
+            self.tree.root = self.tree.insert(self.tree.root, _property)
+        else: 
+            _property = node.key
 
-        # Возвращаем Property, чтобы можно было установить двойную связь
-        return self.bank[index]
+        _property.links.append(link)
+        return _property
 
     def delete(self, value, link: Product):
-        if (index := self._search(value)) == -1:
+        if (node := self.tree.search(self.tree.root, value)) is None:
             raise ValueError(f"property {value!r} not in bank")
-
-        self.bank[index].links.remove(link)
-        if len(self.bank[index].links) == 0:
-            self.bank.pop(index)
+        node.key.links.remove(link)
+        if len(node.key.links) == 0:
+            self.tree.delete(self.tree.root, value)
 
 
 class InventorySystem:
@@ -170,8 +151,9 @@ class InventorySystem:
         with open(filename, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=Product.keys())
             writer.writeheader()
-            for _property in self.banks[Properties.ID.value].bank:
-                writer.writerow(dict(_property.links[0].items()))
+            tree = self.banks[Properties.ID.value].tree
+            for _property in tree.traverse(tree.root):
+                writer.writerow(dict(_property.key.links[0].items()))
 
     def add_product(self, *properties):
         product = Product()
@@ -247,12 +229,14 @@ class InventorySystem:
         yield from self._format_header()
 
         if not filter_by_stock:
-            for _property in self.banks[Properties.ID.value].bank:
-                yield self._format_product(_property.links[0])
+            tree = self.banks[Properties.ID.value].tree
+            for _property in tree.traverse(tree.root):
+                yield self._format_product(_property.key.links[0])
             return
 
-        for _property in self.banks[Properties.QUANTITY.value].bank:
-            for link in _property.links:
-                if _property.value >= link.min_quantity:
+        tree = self.banks[Properties.QUANTITY.value].tree
+        for _property in tree.traverse(tree.root):
+            for link in _property.key.links:
+                if _property.key.value >= link.min_quantity:
                     continue
                 yield self._format_product(link)
