@@ -228,6 +228,8 @@ class InventorySystem:
         top = value[:-1] + chr(ord(value[-1]) + 1)
 
         for product in bank.get_range(value, top):
+            if not product.name.value.startswith(value):
+                continue
             yield self._format_product(product)
 
     def find_by_category(self, value: str):
@@ -239,6 +241,8 @@ class InventorySystem:
         top = value[:-1] + chr(ord(value[-1]) + 1)
 
         for product in bank.get_range(value, top):
+            if not product.category.value.startswith(value):
+                continue
             yield self._format_product(product)
 
     def find_by_price_range(self, _from: int, _to: int):
