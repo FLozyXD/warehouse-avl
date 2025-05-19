@@ -60,6 +60,21 @@ class TreeTools:
             return self.search(node.left, key)
         return self.search(node.right, key)
 
+    def traverse(self, node):
+        if node is None:
+            return []
+        return self.traverse(node.left) + [node] + self.traverse(node.right)
+
+    def traverse_range(self, node, low, high):
+        if node is None:
+            return
+        if node.key > low:
+            yield from self.traverse_range(node.left, low, high)
+        if low <= node.key <= high:
+            yield node
+        if node.key < high:
+            yield from self.traverse_range(node.right, low, high)
+
 class BSTree(TreeTools):
 
     def __init__(self):
